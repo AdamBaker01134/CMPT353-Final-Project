@@ -1,0 +1,10 @@
+# Ignore files from final project submission
+*.zip
+*.docx
+
+# Ignore package-lock.json files and node_modules
+*package-lock.json
+*/node_modules/
+
+# MySQL database directory
+/dbfiles/
