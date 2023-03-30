@@ -5,11 +5,11 @@
 
 version: "3.9"
 services:
-  node:
+  nodejs_server:
     build: ./backend_files
     container_name: node_container
     environment:
-      - DB_HOST=mysql
+      - DB_HOST=mysql_server
       - DB_PORT=3306
       - DB_USER=root
       - DB_PASSWORD=admin
@@ -20,8 +20,7 @@ services:
       - ./backend_files/:/usr/src/app/backend_files
       - /usr/src/app/backend_files/node_modules
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql_server
     stdin_open: true
     tty: true
     healthcheck:
@@ -29,7 +28,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-  react:
+  react_app:
     build: ./frontend_files
     container_name: react_container
     ports:
@@ -39,17 +38,15 @@ services:
       - ./frontend_files/chatroom_app/src/:/usr/src/app/frontend_files/chatroom_app/src
       - /usr/src/app/frontend_files/chatroom_app/node_modules
     depends_on:
-      node:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
+      - nodejs_server
+      - mysql_server
     stdin_open: true
     tty: true
-  mysql:
+  mysql_server:
     image: mysql:5.7
     platform: linux/amd64
     restart: always
-    container: db_container
+    container_name: db_container
     environment:
       - MYSQL_ROOT_PASSWORD=admin
     ports:

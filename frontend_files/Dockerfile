@@ -12,10 +12,10 @@ EXPOSE 3000
 # In case we need to attach to the container and use bash
 RUN apk update && apk add bash
 
-WORKDIR /usr/src/app/frontend_files/react_app
+WORKDIR /usr/src/app/frontend_files/chatroom_app
 
-COPY project_app/src/* ./src/
-COPY project_app/src/*.json .
+COPY chatroom_app/src/* ./src/
+COPY chatroom_app/*.json .
 
 RUN npm install react-router-dom cors
 
