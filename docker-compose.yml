@@ -2,3 +2,66 @@
 # Name: Adam Baker
 # NSID: adb888
 # Student Number: 11252243
+
+version: "3.9"
+services:
+  node:
+    build: ./backend_files
+    container_name: node_container
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=admin
+    restart: on-failure:15
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend_files/:/usr/src/app/backend_files
+      - /usr/src/app/backend_files/node_modules
+    depends_on:
+      mysql:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  react:
+    build: ./frontend_files
+    container_name: react_container
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend_files/chatroom_app/:/usr/src/app/frontend_files/chatroom_app
+      - ./frontend_files/chatroom_app/src/:/usr/src/app/frontend_files/chatroom_app/src
+      - /usr/src/app/frontend_files/chatroom_app/node_modules
+    depends_on:
+      node:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+  mysql:
+    image: mysql:5.7
+    platform: linux/amd64
+    restart: always
+    container: db_container
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db_files:/var/lib/mysql
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-padmin" ]
+      timeout: 20s
+      retries: 10
+volumes:
+  db_files:
+    driver: local
