@@ -32,6 +32,7 @@ connection.connect((error) => {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
+/* Login to chatroom tool */
 app.post("/login", (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
@@ -48,6 +49,34 @@ app.post("/login", (req, res) => {
                 username: result[0].username,
                 password: result[0].password,
             }));
+        }
+    });
+});
+
+/* Sign up for the chatroom tool (will not allow duplicate users) */
+app.post("/createUser", (req, res) => {
+    let username = req.body.username;
+    let password = req.body.password;
+
+    connection.query(`SELECT * FROM users WHERE username = "${username}" AND password = "${password}"`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else if (result.length > 0) {
+            res.status(409).send();
+        } else {
+            connection.query(`INSERT INTO users (username, password) VALUES ('${username}', '${password}')`, (error, result) => {
+                if (error) {
+                    console.error(error);
+                    res.status(400).send(error);
+                } else {
+                    res.status(200).send(JSON.stringify({
+                        userId: result.insertId,
+                        username: username,
+                        password: password,
+                    }));
+                }
+            });
         }
     });
 });
