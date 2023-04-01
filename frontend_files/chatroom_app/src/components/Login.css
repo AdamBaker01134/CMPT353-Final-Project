@@ -1,0 +1,14 @@
+.loginForm {
+    display: flex;
+    flex-direction: column;
+    width: 20%;
+}
+
+.submitButtons {
+    flex-direction: row;
+}
+
+.error {
+    font-size: small;
+    color: red;
+}

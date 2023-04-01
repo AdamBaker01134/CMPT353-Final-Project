@@ -31,11 +31,14 @@ services:
   react_app:
     build: ./frontend_files
     container_name: react_container
+    environment:
+      - WATCHPACK_POLLING=true  # Enables React to update on code change
     ports:
       - "3000:3000"
     volumes:
       - ./frontend_files/chatroom_app/:/usr/src/app/frontend_files/chatroom_app
       - ./frontend_files/chatroom_app/src/:/usr/src/app/frontend_files/chatroom_app/src
+      - ./frontend_files/chatroom_app/src/components/:/usr/src/app/frontend_files/chatroom_app/src
       - /usr/src/app/frontend_files/chatroom_app/node_modules
     depends_on:
       - nodejs_server

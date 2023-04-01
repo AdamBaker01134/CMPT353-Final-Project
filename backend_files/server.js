@@ -32,6 +32,26 @@ connection.connect((error) => {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
+app.post("/login", (req, res) => {
+    let username = req.body.username;
+    let password = req.body.password;
+
+    connection.query(`SELECT * FROM users WHERE username = "${username}" AND password = "${password}"`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else if (result.length === 0) {
+            res.status(401).send();
+        } else {
+            res.status(200).send(JSON.stringify({
+                userId: result[0].userid,
+                username: result[0].username,
+                password: result[0].password,
+            }));
+        }
+    });
+});
+
 app.listen(PORT, () => {
     /* Create "chatroomdb" database if it doesn't already exist */
     connection.query(`CREATE DATABASE IF NOT EXISTS chatroomdb`, (error, result) => {
