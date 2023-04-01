@@ -81,6 +81,31 @@ app.post("/createUser", (req, res) => {
     });
 });
 
+/* Retrieve all created channels */
+app.get("/getChannels", (req, res) => {
+    connection.query(`SELECT * FROM channels`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            res.status(200).send(JSON.stringify(result));
+        }
+    });
+});
+
+/* Create a channel with a title */
+app.post("/addChannel", (req, res) => {
+    let title = req.body.title;
+    connection.query(`INSERT INTO channels (title) VALUES ('${title}')`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            res.status(200).send();
+        }
+    });
+});
+
 app.listen(PORT, () => {
     /* Create "chatroomdb" database if it doesn't already exist */
     connection.query(`CREATE DATABASE IF NOT EXISTS chatroomdb`, (error, result) => {

@@ -24,7 +24,7 @@ const Login = (props) => {
             return response.json();
         }).then(user => {
             props.onLoggedIn(user.userId, user.username, user.password);
-            navigate("/");
+            navigate("/channels");
         }).catch(err => console.error(err));
     }
     const createUser = () => {
@@ -43,7 +43,7 @@ const Login = (props) => {
             return response.json();
         }).then(user => {
             props.onLoggedIn(user.userId, user.username, user.password);
-            navigate("/");
+            navigate("/channels");
         }).catch(err => console.error(err));
     }
 
