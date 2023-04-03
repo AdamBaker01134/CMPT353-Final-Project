@@ -45,7 +45,7 @@ app.post("/login", (req, res) => {
             res.status(401).send();
         } else {
             res.status(200).send(JSON.stringify({
-                userId: result[0].userid,
+                userid: result[0].userid,
                 username: result[0].username,
                 password: result[0].password,
             }));
@@ -71,7 +71,7 @@ app.post("/createUser", (req, res) => {
                     res.status(400).send(error);
                 } else {
                     res.status(200).send(JSON.stringify({
-                        userId: result.insertId,
+                        userid: result.insertId,
                         username: username,
                         password: password,
                     }));
@@ -123,7 +123,7 @@ app.get("/:channelid/getMessages", (req, res) => {
                 return {
                     text: message.text,
                     username: message.username,
-                    rating: message.rating,
+                    userid: message.userid,
                     messageid: message.messageid,
                     comments: commentJSON,
                 };
@@ -140,19 +140,86 @@ app.get("/:channelid/getMessages", (req, res) => {
 app.post("/:channelid/addMessage", (req, res) => {
     let channelId = req.params.channelid;
     let username = req.body.username;
+    let userid = req.body.userid;
     let parentId = req.body.parentid;
     let text = req.body.text;
-    let rating = 0;
     connection.query(`INSERT INTO messages 
-        (channelid, username, parentid, text, rating) VALUES 
-        ('${channelId}', '${username}', '${parentId}', '${text}', '${rating}')`, (error, result) => {
-            if (error) {
-                console.error(error);
-                res.status(400).send(error);
+        (channelid, userid, parentid, text, username) VALUES 
+        ('${channelId}', '${userid}', '${parentId}', '${text}', '${username}')`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            res.status(200).send();
+        }
+    });
+});
+
+/* Get the rating of a specific message */
+app.get("/messages/:messageid/getRating", (req, res) => {
+    let messageid = req.params.messageid;
+    let userid = req.query.userid;
+    connection.query(`SELECT * FROM ratings WHERE messageid="${messageid}"`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            let rating = 0;
+            let userRating = 0;
+            result.forEach(ratingEntry => {
+                if (ratingEntry.rating == 1) {
+                    rating++;
+                } else if (ratingEntry.rating == 2) {
+                    rating--;
+                }
+                if (ratingEntry.userid == userid) {
+                    userRating = ratingEntry.rating;
+                }
+            });
+            res.status(200).send(JSON.stringify({
+                rating: rating,
+                userRating: userRating,
+            }));
+        }
+    });
+});
+
+/* Upvote a message by increasing the message rating by 1 */
+app.post("/messages/:messageid/vote", (req, res) => {
+    let messageid = req.params.messageid;
+    let userid = req.body.userid;
+    let rating = req.body.rating;
+    connection.query(`SELECT * FROM ratings WHERE messageid='${messageid}' AND userid='${userid}'`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            if (result.length > 0) {
+                /* If a rating on this message for this user already exists, update it */
+                connection.query(`UPDATE ratings SET rating='${rating}' WHERE messageid='${messageid}' AND userid='${userid}'`,
+                    (error) => {
+                        if (error) {
+                            console.error(error);
+                            res.status(400).send(error);
+                        } else {
+                            res.status(200).send();
+                        }
+                    });
             } else {
-                res.status(200).send();
+                /* If a rating on this message for this user does not exist, create one */
+                connection.query(`INSERT INTO ratings (messageid, userid, rating) VALUES ('${messageid}', '${userid}', '${rating}')`,
+                    (error) => {
+                        if (error) {
+                            console.error(error);
+                            res.status(400).send(error);
+                        } else {
+                            res.status(200).send();
+                        }
+                    });
             }
-        });
+        }
+    });
+
 });
 
 app.listen(PORT, () => {
@@ -177,27 +244,27 @@ app.listen(PORT, () => {
         password varchar(20) NOT NULL,
         PRIMARY KEY (userid)
     )`,
-    (error, result) => {
-        if (error) {
-            console.error(error);
-        } else {
-            connection.query(`SELECT * FROM users`, (error, result) => {
-                if (error) {
-                    console.error(error);
-                } else {
-                    if (result.length === 0) {
-                        /* If the table was just initialized, insert a system administrator into the table */
-                        console.log("Creating system administrator!");
-                        connection.query(`INSERT INTO users (username, password) VALUES ("sys", "admin")`, (error, result) => {
-                            if (error) {
-                                console.error(error);
-                            }
-                        });
+        (error, result) => {
+            if (error) {
+                console.error(error);
+            } else {
+                connection.query(`SELECT * FROM users`, (error, result) => {
+                    if (error) {
+                        console.error(error);
+                    } else {
+                        if (result.length === 0) {
+                            /* If the table was just initialized, insert a system administrator into the table */
+                            console.log("Creating system administrator!");
+                            connection.query(`INSERT INTO users (username, password) VALUES ("sys", "admin")`, (error, result) => {
+                                if (error) {
+                                    console.error(error);
+                                }
+                            });
+                        }
                     }
-                }
-            });
-        }
-    });
+                });
+            }
+        });
 
     /* Create the "channels" table if it doesn't already exist */
     connection.query(`CREATE TABLE IF NOT EXISTS channels (
@@ -205,27 +272,36 @@ app.listen(PORT, () => {
         title varchar(200) NOT NULL,
         PRIMARY KEY (channelid)
     )`,
-    (error, result) => {
-        if (error) {
-            console.error(error);
-        }
-    });
+        (error, result) => {
+            if (error) {
+                console.error(error);
+            }
+        });
 
     /* Create the "messages" table if it doesn't already exist */
     connection.query(`CREATE TABLE IF NOT EXISTS messages (
         messageid int unsigned NOT NULL auto_increment,
         channelid int unsigned NOT NULL,
-        username varchar(20) NOT NULL,
+        userid int unsigned NOT NULL,
         parentid int NOT NULL,
         text varchar(280) NOT NULL,
-        rating int NOT NULL,
+        username varchar(20) NOT NULL,
         PRIMARY KEY (messageid)
     )`,
-    (error, result) => {
-        if (error) {
-            console.error(error);
-        }
-    });
+        (error, result) => {
+            if (error) {
+                console.error(error);
+            }
+        });
+
+    /* Create the "ratings" table if it doesn't already exist */
+    connection.query(`CREATE TABLE IF NOT EXISTS ratings (
+        ratingid int unsigned NOT NULL auto_increment,
+        messageid int unsigned NOT NULL,
+        userid int unsigned NOT NULL,
+        rating int unsigned NOT NULL,
+        PRIMARY KEY (ratingid)
+    )`)
 
     console.log("Backend server up and running!");
 });

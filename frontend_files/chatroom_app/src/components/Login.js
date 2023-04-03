@@ -23,7 +23,7 @@ const Login = (props) => {
             }
             return response.json();
         }).then(user => {
-            props.onLoggedIn(user.userId, user.username, user.password);
+            props.onLoggedIn(user.userid, user.username, user.password);
             navigate("/channels");
         }).catch(err => console.error(err));
     }
@@ -42,7 +42,7 @@ const Login = (props) => {
             }
             return response.json();
         }).then(user => {
-            props.onLoggedIn(user.userId, user.username, user.password);
+            props.onLoggedIn(user.userid, user.username, user.password);
             navigate("/channels");
         }).catch(err => console.error(err));
     }

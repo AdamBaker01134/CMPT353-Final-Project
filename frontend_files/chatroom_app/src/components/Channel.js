@@ -41,7 +41,7 @@ const Channel = (props) => {
         }
         fetch(`http://localhost:8080/${channelid}/addMessage`, {
             method: "POST",
-            body: new URLSearchParams({ username: props.user.username, parentid: messageid, text: text }),
+            body: new URLSearchParams({ username: props.user.username, userid: props.user.userid, parentid: messageid, text: text }),
             headers: { "Content-type": "application/x-www-form-urlencoded" }
         }).then(response => {
             if (response.status !== 200) {
@@ -67,7 +67,7 @@ const Channel = (props) => {
                     </div>
                     {messages.map((message, index) => {
                         let keyValue = `posting-${index}`
-                        return (<Message data={message} onPost={addMessage} messageKey={keyValue} level={1} key={keyValue} />);
+                        return (<Message data={message} user={props.user} onPost={addMessage} messageKey={keyValue} level={1} key={keyValue} />);
                     })}
                 </>
             }

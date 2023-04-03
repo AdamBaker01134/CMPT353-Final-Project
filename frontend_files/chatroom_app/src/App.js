@@ -12,9 +12,9 @@ import "./App.css";
 function App() {
   const [userInfo, setUserInfo] = useState(null);
 
-  const onLoggedIn = (useId, username, password) => {
+  const onLoggedIn = (userid, username, password) => {
     setUserInfo({
-      useId: useId,
+      userid: userid,
       username: username,
       password: password,
     });

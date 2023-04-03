@@ -27,3 +27,8 @@
     cursor: pointer;
     color: black;
 }
+
+.ratingButton[aria-selected="true"] {
+    color: black;
+    font-size: x-large;
+}
