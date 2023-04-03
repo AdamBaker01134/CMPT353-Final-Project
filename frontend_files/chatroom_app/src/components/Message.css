@@ -1,0 +1,29 @@
+.message[aria-level="1"] {
+    border: 2px solid black;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 10px;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+}
+
+.message .content {
+    border-left: 2px solid black;
+    border-bottom: 2px solid black;
+    padding: 5px;
+    width: 100%;
+}
+
+.ratingButton {
+    margin: 0 5px 0 5px;
+    padding: auto;
+    color: grey;
+}
+
+.ratingButton:hover, .ratingButton.active {
+    cursor: pointer;
+    color: black;
+}

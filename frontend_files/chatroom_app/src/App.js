@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './components/Landing';
 import Login from './components/Login';
 import Channels from "./components/Channels";
-import Messages from "./components/Messages";
+import Channel from "./components/Channel";
 
 import "./App.css";
 
@@ -29,7 +29,7 @@ function App() {
           {userInfo !== null &&
             <>
               <Route path="/channels" element={<Channels user={userInfo} /> } />
-              <Route path="/channels/:channelid/:title" element={<Messages />} />
+              <Route path="/channels/:channelid/:title" element={<Channel user={userInfo} />} />
             </>
           }
         </Routes>

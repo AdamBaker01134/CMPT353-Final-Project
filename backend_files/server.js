@@ -106,6 +106,55 @@ app.post("/addChannel", (req, res) => {
     });
 });
 
+/* Retrieve the messages and their nested replies from a given channel */
+app.get("/:channelid/getMessages", (req, res) => {
+    let channelid = req.params.channelid;
+    connection.query(`SELECT * FROM messages WHERE channelid = "${channelid}"`, (error, results) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            /* Recursive function to construct a JSON of all messages and their nested comments */
+            const constructMessageJSON = (message) => {
+                let messageId = message.messageid;
+                let comments = results.filter(result => result.parentid === messageId);
+                let commentJSON = [];
+                comments.forEach(comment => commentJSON.push(constructMessageJSON(comment)));
+                return {
+                    text: message.text,
+                    username: message.username,
+                    rating: message.rating,
+                    messageid: message.messageid,
+                    comments: commentJSON,
+                };
+            }
+            let messagesJSON = [];
+            let parentMessages = results.filter(result => result.parentid === -1);
+            parentMessages.forEach(parentMessage => messagesJSON.push(constructMessageJSON(parentMessage)));
+            res.status(200).send(JSON.stringify(messagesJSON));
+        }
+    });
+});
+
+/* Post a message (post or reply) to a specifc channel */
+app.post("/:channelid/addMessage", (req, res) => {
+    let channelId = req.params.channelid;
+    let username = req.body.username;
+    let parentId = req.body.parentid;
+    let text = req.body.text;
+    let rating = 0;
+    connection.query(`INSERT INTO messages 
+        (channelid, username, parentid, text, rating) VALUES 
+        ('${channelId}', '${username}', '${parentId}', '${text}', '${rating}')`, (error, result) => {
+            if (error) {
+                console.error(error);
+                res.status(400).send(error);
+            } else {
+                res.status(200).send();
+            }
+        });
+});
+
 app.listen(PORT, () => {
     /* Create "chatroomdb" database if it doesn't already exist */
     connection.query(`CREATE DATABASE IF NOT EXISTS chatroomdb`, (error, result) => {
@@ -166,9 +215,10 @@ app.listen(PORT, () => {
     connection.query(`CREATE TABLE IF NOT EXISTS messages (
         messageid int unsigned NOT NULL auto_increment,
         channelid int unsigned NOT NULL,
-        userid int unsigned NOT NULL,
-        parentid int unsigned,
+        username varchar(20) NOT NULL,
+        parentid int NOT NULL,
         text varchar(280) NOT NULL,
+        rating int NOT NULL,
         PRIMARY KEY (messageid)
     )`,
     (error, result) => {

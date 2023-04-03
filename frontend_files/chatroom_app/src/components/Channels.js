@@ -24,7 +24,6 @@ const Channels = (props) => {
                 return response.json();
             })
             .then(data => setChannels(data))
-            .then(() => console.log("GOT CHANNELS!"))
             .catch(error => console.error(error));
     }
 
@@ -54,7 +53,7 @@ const Channels = (props) => {
         <h1>Hello, {props.user.username}!</h1>
         <button onClick={refresh}>Refresh</button>
         {error ?
-            <span className="error">We had trouble retrieving the channels. Please refresh to try again</span>
+            <span className="error">We had trouble retrieving the channels. Please refresh to try again.</span>
             :
             <div className="container">
                 <div className="container-horizontal">
