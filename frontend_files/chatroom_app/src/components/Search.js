@@ -1,3 +1,10 @@
+/**
+ * CMPT 353 Final Project Frontend React Application Search Component
+ * Name: Adam Baker
+ * NSID: adb888
+ * Student Number: 11252243
+ */
+
 import { React, useState } from 'react';
 
 import "./Search.css";

@@ -1,3 +1,10 @@
+/**
+ * CMPT 353 Final Project Frontend React Application App.js file
+ * Name: Adam Baker
+ * NSID: adb888
+ * Student Number: 11252243
+ */
+
 import { React, useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 

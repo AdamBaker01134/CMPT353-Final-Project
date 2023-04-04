@@ -1,3 +1,10 @@
+/**
+ * CMPT 353 Final Project Frontend React Application Channels Component
+ * Name: Adam Baker
+ * NSID: adb888
+ * Student Number: 11252243
+ */
+
 import { React, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
