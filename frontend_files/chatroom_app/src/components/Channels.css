@@ -7,3 +7,21 @@
     display: flex;
     flex-direction: row;
 }
+
+.channelContainer {
+    border: 2px solid black;
+    border-radius: 10px;
+    width: 50%;
+    padding: 5px;
+    margin: 5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.channelContainer button {
+    display: none;
+}
+
+.channelContainer:hover button {
+    display: initial;
+}

@@ -67,7 +67,7 @@ const Channel = (props) => {
                     </div>
                     {messages.map((message, index) => {
                         let keyValue = `posting-${index}`
-                        return (<Message data={message} user={props.user} onPost={addMessage} messageKey={keyValue} level={1} key={keyValue} />);
+                        return (<Message data={message} user={props.user} onPost={addMessage} onRefresh={refresh} messageKey={keyValue} level={1} key={keyValue} />);
                     })}
                 </>
             }

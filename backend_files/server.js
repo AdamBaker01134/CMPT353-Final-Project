@@ -21,6 +21,9 @@ const connection = mysql.createConnection({
 const PORT = 8080;
 const app = express();
 
+const ADMIN_USERNAME = "sys";
+const ADMIN_PASSWORD = "admin";
+
 connection.connect((error) => {
     if (error) {
         throw error;
@@ -48,7 +51,27 @@ app.post("/login", (req, res) => {
                 userid: result[0].userid,
                 username: result[0].username,
                 password: result[0].password,
+                admin: result[0].userid === 1,
             }));
+        }
+    });
+});
+
+/* Get all users with their ids */
+app.get("/users", (req, res) => {
+    connection.query(`SELECT * FROM users`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            let responseJSON = [];
+            result.forEach(entry => {
+                responseJSON.push({
+                    userid: entry.userid,
+                    username: entry.username,
+                });
+            });
+            res.status(200).send(JSON.stringify(responseJSON));
         }
     });
 });
@@ -74,11 +97,39 @@ app.post("/createUser", (req, res) => {
                         userid: result.insertId,
                         username: username,
                         password: password,
+                        admin: false,
                     }));
                 }
             });
         }
     });
+});
+
+/* ADMIN PRIVILEDGE: delete user from system */
+app.delete("/removeUser/:userid", (req, res) => {
+    let userid = req.params.userid;
+    if (userid == 1) {
+        /* Ensure the admin does not delete itself */
+        res.status(400).send();
+    } else {
+        /* Remove user from "users" table */
+        connection.query(`DELETE FROM users WHERE userid='${userid}'`, (error, result) => {
+            if (error) {
+                console.error(error);
+                res.status(400).send(error);
+            } else {
+                /* Remove users ratings from "ratings" table */
+                connection.query(`DELETE FROM ratings WHERE userid='${userid}'`, (error, result) => {
+                    if (error) {
+                        console.error(error);
+                        res.status(400).send(error);
+                    } else {
+                        res.status(200).send();
+                    }
+                })
+            }
+        });
+    }
 });
 
 /* Retrieve all created channels */
@@ -106,6 +157,36 @@ app.post("/addChannel", (req, res) => {
     });
 });
 
+/* ADMIN PRIVILEDGE: remove a channel from the system */
+app.delete("/removeChannel/:channelid", (req, res) => {
+    let channelid = req.params.channelid;
+    /* Remove channel from "channels" table */
+    connection.query(`DELETE FROM channels WHERE channelid='${channelid}'`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error)
+        } else {
+            /* Remove channel from "messages" table */
+            connection.query(`DELETE FROM messages WHERE channelid='${channelid}'`, (error, result) => {
+                if (error) {
+                    console.error(error);
+                    res.status(400).send(error);
+                } else {
+                    /* Remove channel from "ratings" table */
+                    connection.query(`DELETE FROM ratings WHERE channelid='${channelid}'`, (error, result) => {
+                        if (error) {
+                            console.error(error);
+                            res.status(400).send(error);
+                        } else {
+                            res.status(200).send();
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+
 /* Retrieve the messages and their nested replies from a given channel */
 app.get("/:channelid/getMessages", (req, res) => {
     let channelid = req.params.channelid;
@@ -124,6 +205,7 @@ app.get("/:channelid/getMessages", (req, res) => {
                     text: message.text,
                     username: message.username,
                     userid: message.userid,
+                    channelid: message.channelid,
                     messageid: message.messageid,
                     comments: commentJSON,
                 };
@@ -155,11 +237,57 @@ app.post("/:channelid/addMessage", (req, res) => {
     });
 });
 
+/* ADMIN PRIVILEDGES: remove a message from the system */
+app.delete("/:channelid/messages/removeMessage/:messageid", (req, res) => {
+    let channelid = req.params.channelid;
+    let messageid = req.params.messageid;
+
+    /* Collect all messages in the channel */
+    connection.query(`SELECT * FROM messages WHERE channelid='${channelid}'`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            let affectedMessages = [parseInt(messageid)];
+            const findAffectedMessages = (currentid) => {
+                let children = result.filter(entry => entry.parentid == currentid);
+                children.forEach(child => {
+                    affectedMessages.push(child.messageid);
+                    findAffectedMessages(child.messageid);
+                });
+            }
+            findAffectedMessages(messageid);
+            let totalDeletions = 0;
+            affectedMessages.forEach(affectedid => {
+                /* Remove message and all replies to that message from "messages" table */
+                connection.query(`DELETE FROM messages WHERE messageid='${affectedid}'`, (error, result) => {
+                    if (error) {
+                        console.error(error);
+                        res.status(400).send(error);
+                    } else {
+                        /* Remove all affected ratings from "ratings" table */
+                        connection.query(`DELETE FROM ratings WHERE messageid='${affectedid}'`, (error, result) => {
+                            if (error) {
+                                console.error(error);
+                                res.status(400).send(error);
+                            } else if (++totalDeletions >= affectedMessages.length) {
+                                /* Send successful response once all affected messages/rating have been serviced */
+                                res.status(200).send();
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    });
+});
+
 /* Get the rating of a specific message */
-app.get("/messages/:messageid/getRating", (req, res) => {
+app.get("/:channelid/messages/:messageid/getRating", (req, res) => {
+    let channelid = req.params.channelid;
     let messageid = req.params.messageid;
     let userid = req.query.userid;
-    connection.query(`SELECT * FROM ratings WHERE messageid="${messageid}"`, (error, result) => {
+    connection.query(`SELECT * FROM ratings WHERE channelid="${channelid}" AND messageid="${messageid}"`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
@@ -185,11 +313,12 @@ app.get("/messages/:messageid/getRating", (req, res) => {
 });
 
 /* Upvote a message by increasing the message rating by 1 */
-app.post("/messages/:messageid/vote", (req, res) => {
+app.post("/:channelid/messages/:messageid/vote", (req, res) => {
+    let channelid = req.params.channelid;
     let messageid = req.params.messageid;
     let userid = req.body.userid;
     let rating = req.body.rating;
-    connection.query(`SELECT * FROM ratings WHERE messageid='${messageid}' AND userid='${userid}'`, (error, result) => {
+    connection.query(`SELECT * FROM ratings WHERE channelid='${channelid}' AND messageid='${messageid}' AND userid='${userid}'`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
@@ -207,7 +336,7 @@ app.post("/messages/:messageid/vote", (req, res) => {
                     });
             } else {
                 /* If a rating on this message for this user does not exist, create one */
-                connection.query(`INSERT INTO ratings (messageid, userid, rating) VALUES ('${messageid}', '${userid}', '${rating}')`,
+                connection.query(`INSERT INTO ratings (channelid, messageid, userid, rating) VALUES ('${channelid}', '${messageid}', '${userid}', '${rating}')`,
                     (error) => {
                         if (error) {
                             console.error(error);
@@ -255,7 +384,7 @@ app.listen(PORT, () => {
                         if (result.length === 0) {
                             /* If the table was just initialized, insert a system administrator into the table */
                             console.log("Creating system administrator!");
-                            connection.query(`INSERT INTO users (username, password) VALUES ("sys", "admin")`, (error, result) => {
+                            connection.query(`INSERT INTO users (username, password) VALUES ("${ADMIN_USERNAME}", "${ADMIN_PASSWORD}")`, (error, result) => {
                                 if (error) {
                                     console.error(error);
                                 }
@@ -297,11 +426,12 @@ app.listen(PORT, () => {
     /* Create the "ratings" table if it doesn't already exist */
     connection.query(`CREATE TABLE IF NOT EXISTS ratings (
         ratingid int unsigned NOT NULL auto_increment,
+        channelid int unsigned NOT NULL,
         messageid int unsigned NOT NULL,
         userid int unsigned NOT NULL,
         rating int unsigned NOT NULL,
         PRIMARY KEY (ratingid)
-    )`)
+    )`);
 
     console.log("Backend server up and running!");
 });
