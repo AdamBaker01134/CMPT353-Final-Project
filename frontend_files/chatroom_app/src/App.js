@@ -6,6 +6,7 @@ import Login from './components/Login';
 import Channels from "./components/Channels";
 import Channel from "./components/Channel";
 import Users from "./components/Users";
+import Search from "./components/Search";
 
 import "./App.css";
 
@@ -49,6 +50,7 @@ function App() {
               <Route exact path="/" element={<Channels user={userInfo} />} />
               <Route path="/channels/:channelid/:title" element={<Channel user={userInfo} />} />
               <Route path="/users" element={<Users user={userInfo} />} />
+              <Route path="/search" element={<Search user={userInfo} />} />
             </>
             :
             <>

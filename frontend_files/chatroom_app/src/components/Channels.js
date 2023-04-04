@@ -83,6 +83,7 @@ const Channels = (props) => {
                     </div>
                 )}
                 <Link to="/users"><button>Users</button></Link>
+                <Link to="/search"><button>Search</button></Link>
             </div>}
     </>);
 }

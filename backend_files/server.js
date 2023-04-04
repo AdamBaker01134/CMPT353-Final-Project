@@ -316,6 +316,7 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
     let channelid = req.params.channelid;
     let messageid = req.params.messageid;
     let userid = req.body.userid;
+    let username = req.body.username;
     let rating = req.body.rating;
     connection.query(`SELECT * FROM ratings WHERE channelid='${channelid}' AND messageid='${messageid}' AND userid='${userid}'`, (error, result) => {
         if (error) {
@@ -335,7 +336,7 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
                     });
             } else {
                 /* If a rating on this message for this user does not exist, create one */
-                connection.query(`INSERT INTO ratings (channelid, messageid, userid, rating) VALUES ('${channelid}', '${messageid}', '${userid}', '${rating}')`,
+                connection.query(`INSERT INTO ratings (channelid, messageid, userid, username, rating) VALUES ('${channelid}', '${messageid}', '${userid}', '${username}', '${rating}')`,
                     (error) => {
                         if (error) {
                             console.error(error);
@@ -347,7 +348,126 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
             }
         }
     });
+});
 
+/* Search for messages that contain specific strings */
+app.get("/search/messages", (req, res) => {
+    let searchQuery = req.query.query;
+    connection.query(`SELECT * FROM messages`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            let responseJSON = [];
+            result.forEach(message => {
+                if (message.text.includes(searchQuery)) {
+                    responseJSON.push({
+                        username: message.username,
+                        text: message.text,
+                    });
+                }
+            });
+            res.status(200).send(JSON.stringify(responseJSON));
+        }
+    });
+});
+
+/* Search for messages from specific users */
+app.get("/search/messages/:username", (req, res) => {
+    let username = req.params.username;
+    connection.query(`SELECT * FROM messages WHERE username='${username}'`, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            let responseJSON = [];
+            result.forEach(message => responseJSON.push({
+                username: message.username,
+                text: message.text,
+            }));
+            res.status(200).send(JSON.stringify(responseJSON));
+        }
+    });
+});
+
+/* Search for user with the most/least posts or highest/lowest ranking */
+app.get("/search/users/:command", (req, res) => {
+    let command = req.params.command;
+    connection.query(`SELECT * FROM users`, (error, userResult) => {
+        if (error) {
+            console.error(error);
+            res.status(400).send(error);
+        } else {
+            let usersChecked = 0;
+            let totals = {};
+            let desiredUser = {};
+            userResult.forEach(user => {
+                totals[user.userid] = {
+                    username: user.username,
+                    total: 0,
+                };
+                connection.query(`SELECT * FROM messages WHERE userid='${user.userid}'`, (error, messageResult) => {
+                    if (error) {
+                        console.error(error);
+                        res.status(400).send(error);
+                    }
+                    if (command === "mostPosts" || command === "leastPosts") {
+                        messageResult.forEach(message => {
+                            totals[message.userid].total++;
+                        });
+                        if (++usersChecked === userResult.length) {
+                            /* Checked all users, now need to find the desired user */
+                            Object.values(totals).forEach(user => {
+                                /* Find the desired user based on the command */
+                                if (Object.keys(desiredUser).length === 0) {
+                                    desiredUser = user;
+                                } else if (command === "mostPosts" && user.total > desiredUser.total) {
+                                    desiredUser = user;
+                                } else if (command === "leastPosts" && user.total < desiredUser.total) {
+                                    desiredUser = user;
+                                }
+                            })
+                            res.status(200).send(JSON.stringify(desiredUser));
+                        }
+                    } else if (command === "highestRating" || command === "lowestRating") {
+                        let messagesChecked = 0;
+                        messageResult.forEach(message => {
+                            connection.query(`SELECT * FROM ratings WHERE messageid='${message.messageid}'`, (error, ratingResult) => {
+                                if (error) {
+                                    console.error(error);
+                                    res.status(400).send(error);
+                                }
+                                messagesChecked++;
+                                ratingResult.forEach(rating => {
+                                    if (rating.rating == 1) {
+                                        totals[message.userid].total++;
+                                    } else if (rating.rating == 2) {
+                                        totals[message.userid].total--;
+                                    }
+                                });
+                                if (messagesChecked === messageResult.length && ++usersChecked === userResult.length) {
+                                    /* Checked all users and messages, now need to find the desired user */
+                                    Object.values(totals).forEach(user => {
+                                        /* Find the desired user based on the command */
+                                        if (Object.keys(desiredUser).length === 0) {
+                                            desiredUser = user;
+                                        } else if (command === "highestRating" && user.total > desiredUser.total) {
+                                            desiredUser = user;
+                                        } else if (command === "lowestRating" && user.total < desiredUser.total) {
+                                            desiredUser = user;
+                                        }
+                                    });
+                                    res.status(200).send(JSON.stringify(desiredUser));
+                                }
+                            });
+                        });
+                    } else {
+                        res.status(400).send();
+                    }
+                });
+            });
+        }
+    });
 });
 
 app.listen(PORT, () => {
@@ -428,6 +548,7 @@ app.listen(PORT, () => {
         channelid int unsigned NOT NULL,
         messageid int unsigned NOT NULL,
         userid int unsigned NOT NULL,
+        username varchar(20) NOT NULL,
         rating int unsigned NOT NULL,
         PRIMARY KEY (ratingid)
     )`);
