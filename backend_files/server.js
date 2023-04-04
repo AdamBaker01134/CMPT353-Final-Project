@@ -50,7 +50,6 @@ app.post("/login", (req, res) => {
             res.status(200).send(JSON.stringify({
                 userid: result[0].userid,
                 username: result[0].username,
-                password: result[0].password,
                 admin: result[0].userid === 1,
             }));
         }

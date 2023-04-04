@@ -23,8 +23,8 @@ const Login = (props) => {
             }
             return response.json();
         }).then(user => {
-            props.onLoggedIn(user.userid, user.username, user.password, user.admin);
-            navigate("/channels");
+            props.onLoggedIn(user.userid, user.username, user.admin);
+            navigate("/");
         }).catch(err => console.error(err));
     }
     const createUser = () => {
@@ -42,8 +42,8 @@ const Login = (props) => {
             }
             return response.json();
         }).then(user => {
-            props.onLoggedIn(user.userid, user.username, user.password, user.admin);
-            navigate("/channels");
+            props.onLoggedIn(user.userid, user.username, user.admin);
+            navigate("/");
         }).catch(err => console.error(err));
     }
 
