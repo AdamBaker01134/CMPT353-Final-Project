@@ -5,6 +5,8 @@
  * Student Number: 11252243
  */
 
+/* eslint-disable eqeqeq */
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
