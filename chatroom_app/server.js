@@ -5,8 +5,6 @@
  * Student Number: 11252243
  */
 
-"use strict"
-
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");

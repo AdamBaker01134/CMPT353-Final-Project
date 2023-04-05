@@ -7,4 +7,4 @@
 */node_modules/
 
 # MySQL database directory
-/db_files/
+*/db_files/

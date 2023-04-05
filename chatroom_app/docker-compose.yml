@@ -6,7 +6,7 @@
 version: "3.9"
 services:
   nodejs_server:
-    build: ./backend_files
+    build: ./
     container_name: node_container
     environment:
       - DB_HOST=mysql_server
@@ -17,8 +17,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./backend_files/:/usr/src/app/backend_files
-      - /usr/src/app/backend_files/node_modules
+      - ./:/usr/src/app/
+      - /usr/src/app/node_modules
+    command: node server.js
     depends_on:
       - mysql_server
     stdin_open: true
@@ -29,17 +30,18 @@ services:
       timeout: 5s
       retries: 20
   react_app:
-    build: ./frontend_files
+    build: ./
     container_name: react_container
     environment:
       - WATCHPACK_POLLING=true  # Enables React to update on code change
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend_files/chatroom_app/:/usr/src/app/frontend_files/chatroom_app
-      - ./frontend_files/chatroom_app/src/:/usr/src/app/frontend_files/chatroom_app/src
-      - ./frontend_files/chatroom_app/src/components/:/usr/src/app/frontend_files/chatroom_app/src
-      - /usr/src/app/frontend_files/chatroom_app/node_modules
+      - ./:/usr/src/app/
+      - ./src/:/usr/src/app/src
+      - ./src/components/:/usr/src/app/src
+      - /usr/src/app/node_modules
+    command: npm start
     depends_on:
       - nodejs_server
       - mysql_server

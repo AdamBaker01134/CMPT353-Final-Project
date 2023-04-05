@@ -8,12 +8,12 @@
 import { React, useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
-import Landing from './components/Landing';
-import Login from './components/Login';
-import Channels from "./components/Channels";
-import Channel from "./components/Channel";
-import Users from "./components/Users";
-import Search from "./components/Search";
+import Landing from './Landing';
+import Login from './Login';
+import Channels from "./Channels";
+import Channel from "./Channel";
+import Users from "./Users";
+import Search from "./Search";
 
 import "./App.css";
 
