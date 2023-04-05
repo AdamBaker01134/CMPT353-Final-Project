@@ -111,7 +111,7 @@ const Search = (props) => {
                     <span>No results. Please try again.</span>
                     : displayed.type === "messages" ?
                         displayed.value.map((message, index) =>
-                            <div className="messageCard" key={`message-${message}`}>
+                            <div className="messageCard" key={`message-${index}`}>
                                 <b>{message.username}</b>
                                 <p>Message: {message.text}</p>
                             </div>
