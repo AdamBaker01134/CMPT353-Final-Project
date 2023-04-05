@@ -13,6 +13,8 @@ A chat tool that allows users to:
 
 The UI is implemented in Reactjs and all text data is stored in a mysql database.
 
+Check out this video for a full description of the system: <https://youtu.be/i43Jn3OyRW8>
+
 ## How to run the system
 
 To run the Channel-Based Chat Tool, you need to make sure you have Docker installed and opened
