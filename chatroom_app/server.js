@@ -289,7 +289,7 @@ app.get("/:channelid/messages/:messageid/getRating", (req, res) => {
                 } else if (ratingEntry.rating == 2) {
                     rating--;
                 }
-                if (ratingEntry.userid == userid) {
+                if (ratingEntry.raterid == userid) {
                     userRating = ratingEntry.rating;
                 }
             });
