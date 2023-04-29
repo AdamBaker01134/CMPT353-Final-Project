@@ -7,8 +7,6 @@
 
 import { React, useState, useEffect } from "react";
 
-import "./Users.css";
-
 const Users = (props) => {
     const [users, setUsers] = useState([]);
 
@@ -47,7 +45,7 @@ const Users = (props) => {
             <h1>Users</h1>
             <button onClick={refresh}>Refresh</button>
             {users.map(user =>
-                <div key={user.userid} className="userContainer">
+                <div key={user.userid} className="container">
                     <span style={props.user.username === user.username ? { color: "blue"} : {}}>{user.username}</span>
                     {props.user.admin &&
                         <button onClick={(e) => removeUser(user.userid, user.username)}>X</button>

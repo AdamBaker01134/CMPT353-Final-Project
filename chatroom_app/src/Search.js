@@ -7,8 +7,6 @@
 
 import { React, useState } from 'react';
 
-import "./Search.css";
-
 const COMMANDS = {
     MOST_POSTS: "mostPosts",
     LEAST_POSTS: "leastPosts",

@@ -7,8 +7,6 @@
 
 import { React, useState, useEffect } from "react";
 
-import "./Message.css";
-
 const Message = (props) => {
 
     const [newReply, setNewReply] = useState("");

@@ -8,8 +8,6 @@
 import { React, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-import "./Channels.css";
-
 const Channels = (props) => {
 
     const [error, setError] = useState(false);
@@ -76,13 +74,13 @@ const Channels = (props) => {
         {error ?
             <span className="error">We had trouble retrieving the channels. Please refresh to try again.</span>
             :
-            <div className="container">
-                <div className="container-horizontal">
+            <div>
+                <div>
                     <input type="text" id="createChannel" placeholder="New channel title" value={newChannel} onChange={(e) => setNewChannel(e.target.value)} />
                     <button onClick={createChannel}>Create Channel</button>
                 </div>
                 {channels.map(channel =>
-                    <div key={channel.channelid} className="channelContainer">
+                    <div key={channel.channelid} className="container">
                         <Link to={`/channels/${channel.channelid}/${channel.title}`} key={channel.channelid}>{channel.title}</Link>
                         {props.user.admin &&
                             <button onClick={(e) => removeChannel(channel.channelid, channel.title)}>X</button>

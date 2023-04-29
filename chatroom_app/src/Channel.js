@@ -10,8 +10,6 @@ import { useParams } from "react-router-dom";
 
 import Message from "./Message";
 
-import "./Channel.css";
-
 const Channel = (props) => {
     const { channelid, title } = useParams();
     const [error, setError] = useState(false);
