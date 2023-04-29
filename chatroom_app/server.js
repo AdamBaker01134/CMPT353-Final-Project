@@ -385,9 +385,9 @@ app.get("/search/users/:command", (req, res) => {
     let totals = {};
 
     const callback = () => {
-        let desiredUser = null;
+        let desiredUser = {};
         Object.values(totals).forEach(user => {
-            if (desiredUser === null) {
+            if (Object.keys(desiredUser).length === 0) {
                 desiredUser = user;
             } else {
                 switch (command) {
@@ -419,7 +419,7 @@ app.get("/search/users/:command", (req, res) => {
                 } else {
                     result.forEach(entry => {
                         if (!(entry.userid in totals)) {
-                            totals[entry.username] = {
+                            totals[entry.userid] = {
                                 username: entry.username,
                                 total: 0,
                             }
@@ -456,6 +456,7 @@ app.get("/search/users/:command", (req, res) => {
             break;
         default:
             res.status(400).send();
+            break;
     }
 });
 
