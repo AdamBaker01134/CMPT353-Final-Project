@@ -342,21 +342,27 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
 /* Search for messages that contain specific strings */
 app.get("/search/messages", (req, res) => {
     let searchQuery = req.query.query;
-    connection.query(`SELECT * FROM users NATURAL JOIN messages`, (error, result) => {
+    connection.query(`SELECT * FROM users NATURAL JOIN (messages NATURAL JOIN ratings)`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
         } else {
-            let responseJSON = [];
-            result.forEach(message => {
-                if (message.text.includes(searchQuery)) {
-                    responseJSON.push({
-                        username: message.username,
-                        text: message.text,
-                    });
+            let responseJSON = {};
+            result.filter(message => message.text.includes(searchQuery)).forEach(entry => {
+                if (!(entry.messageid in responseJSON)) {
+                    responseJSON[entry.messageid] = {
+                        username: entry.username,
+                        text: entry.text,
+                        rating: 0,
+                    }
+                }
+                if (entry.rating === 1) {
+                    responseJSON[entry.messageid].rating++;
+                } else if (entry.rating === 2) {
+                    responseJSON[entry.messageid].rating--;
                 }
             });
-            res.status(200).send(JSON.stringify(responseJSON));
+            res.status(200).send(JSON.stringify(Object.values(responseJSON)));
         }
     });
 });
