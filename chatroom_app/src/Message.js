@@ -56,7 +56,7 @@ const Message = (props) => {
         }
         fetch(`http://localhost:8080/${props.data.channelid}/messages/${props.data.messageid}/vote`, {
             method: "POST",
-            body: new URLSearchParams({ userid: props.user.userid, username: props.user.username, rating: rate }),
+            body: new URLSearchParams({ userid: props.user.userid, rating: rate }),
             headers: { "Content-type": "application/x-www-form-urlencoded" }
         }).then(response => {
             if (response.status !== 200) {

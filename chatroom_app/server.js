@@ -80,26 +80,17 @@ app.post("/createUser", (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
 
-    connection.query(`SELECT * FROM users WHERE username = "${username}" AND password = "${password}"`, (error, result) => {
+    connection.query(`INSERT INTO users (username, password) VALUES ('${username}', '${password}')`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
-        } else if (result.length > 0) {
-            res.status(409).send();
         } else {
-            connection.query(`INSERT INTO users (username, password) VALUES ('${username}', '${password}')`, (error, result) => {
-                if (error) {
-                    console.error(error);
-                    res.status(400).send(error);
-                } else {
-                    res.status(200).send(JSON.stringify({
-                        userid: result.insertId,
-                        username: username,
-                        password: password,
-                        admin: false,
-                    }));
-                }
-            });
+            res.status(200).send(JSON.stringify({
+                userid: result.insertId,
+                username: username,
+                password: password,
+                admin: false,
+            }));
         }
     });
 });
@@ -118,7 +109,7 @@ app.delete("/removeUser/:userid", (req, res) => {
                 res.status(400).send(error);
             } else {
                 /* Remove users ratings from "ratings" table */
-                connection.query(`DELETE FROM ratings WHERE userid='${userid}'`, (error, result) => {
+                connection.query(`DELETE FROM ratings WHERE raterid='${userid}'`, (error, result) => {
                     if (error) {
                         console.error(error);
                         res.status(400).send(error);
@@ -189,7 +180,7 @@ app.delete("/removeChannel/:channelid", (req, res) => {
 /* Retrieve the messages and their nested replies from a given channel */
 app.get("/:channelid/getMessages", (req, res) => {
     let channelid = req.params.channelid;
-    connection.query(`SELECT * FROM messages WHERE channelid = "${channelid}"`, (error, results) => {
+    connection.query(`SELECT * FROM users NATURAL JOIN messages WHERE channelid = "${channelid}"`, (error, results) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
@@ -220,13 +211,12 @@ app.get("/:channelid/getMessages", (req, res) => {
 /* Post a message (post or reply) to a specifc channel */
 app.post("/:channelid/addMessage", (req, res) => {
     let channelId = req.params.channelid;
-    let username = req.body.username;
     let userid = req.body.userid;
     let parentId = req.body.parentid;
     let text = req.body.text;
     connection.query(`INSERT INTO messages 
-        (channelid, userid, parentid, text, username) VALUES 
-        ('${channelId}', '${userid}', '${parentId}', '${text}', '${username}')`, (error, result) => {
+        (channelid, userid, parentid, text) VALUES 
+        ('${channelId}', '${userid}', '${parentId}', '${text}')`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
@@ -316,16 +306,15 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
     let channelid = req.params.channelid;
     let messageid = req.params.messageid;
     let userid = req.body.userid;
-    let username = req.body.username;
     let rating = req.body.rating;
-    connection.query(`SELECT * FROM ratings WHERE channelid='${channelid}' AND messageid='${messageid}' AND userid='${userid}'`, (error, result) => {
+    connection.query(`SELECT * FROM ratings WHERE channelid='${channelid}' AND messageid='${messageid}' AND raterid='${userid}'`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
         } else {
             if (result.length > 0) {
                 /* If a rating on this message for this user already exists, update it */
-                connection.query(`UPDATE ratings SET rating='${rating}' WHERE messageid='${messageid}' AND userid='${userid}'`,
+                connection.query(`UPDATE ratings SET rating='${rating}' WHERE messageid='${messageid}' AND raterid='${userid}'`,
                     (error) => {
                         if (error) {
                             console.error(error);
@@ -336,7 +325,7 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
                     });
             } else {
                 /* If a rating on this message for this user does not exist, create one */
-                connection.query(`INSERT INTO ratings (channelid, messageid, userid, username, rating) VALUES ('${channelid}', '${messageid}', '${userid}', '${username}', '${rating}')`,
+                connection.query(`INSERT INTO ratings (channelid, messageid, raterid, rating) VALUES ('${channelid}', '${messageid}', '${userid}', '${rating}')`,
                     (error) => {
                         if (error) {
                             console.error(error);
@@ -353,7 +342,7 @@ app.post("/:channelid/messages/:messageid/vote", (req, res) => {
 /* Search for messages that contain specific strings */
 app.get("/search/messages", (req, res) => {
     let searchQuery = req.query.query;
-    connection.query(`SELECT * FROM messages`, (error, result) => {
+    connection.query(`SELECT * FROM users NATURAL JOIN messages`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
@@ -375,7 +364,7 @@ app.get("/search/messages", (req, res) => {
 /* Search for messages from specific users */
 app.get("/search/messages/:username", (req, res) => {
     let username = req.params.username;
-    connection.query(`SELECT * FROM messages WHERE username='${username}'`, (error, result) => {
+    connection.query(`SELECT * FROM users NATURAL JOIN messages WHERE username='${username}'`, (error, result) => {
         if (error) {
             console.error(error);
             res.status(400).send(error);
@@ -393,81 +382,81 @@ app.get("/search/messages/:username", (req, res) => {
 /* Search for user with the most/least posts or highest/lowest ranking */
 app.get("/search/users/:command", (req, res) => {
     let command = req.params.command;
-    connection.query(`SELECT * FROM users`, (error, userResult) => {
-        if (error) {
-            console.error(error);
-            res.status(400).send(error);
-        } else {
-            let usersChecked = 0;
-            let totals = {};
-            let desiredUser = {};
-            userResult.forEach(user => {
-                totals[user.userid] = {
-                    username: user.username,
-                    total: 0,
-                };
-                connection.query(`SELECT * FROM messages WHERE userid='${user.userid}'`, (error, messageResult) => {
-                    if (error) {
-                        console.error(error);
-                        res.status(400).send(error);
-                    }
-                    if (command === "mostPosts" || command === "leastPosts") {
-                        messageResult.forEach(message => {
-                            totals[message.userid].total++;
-                        });
-                        if (++usersChecked === userResult.length) {
-                            /* Checked all users, now need to find the desired user */
-                            Object.values(totals).forEach(user => {
-                                /* Find the desired user based on the command */
-                                if (Object.keys(desiredUser).length === 0) {
-                                    desiredUser = user;
-                                } else if (command === "mostPosts" && user.total > desiredUser.total) {
-                                    desiredUser = user;
-                                } else if (command === "leastPosts" && user.total < desiredUser.total) {
-                                    desiredUser = user;
-                                }
-                            })
-                            res.status(200).send(JSON.stringify(desiredUser));
+    let totals = {};
+
+    const callback = () => {
+        let desiredUser = null;
+        Object.values(totals).forEach(user => {
+            if (desiredUser === null) {
+                desiredUser = user;
+            } else {
+                switch (command) {
+                    case "mostPosts":
+                    case "highestRating":
+                        if (user.total > desiredUser.total) {
+                            desiredUser = user;
                         }
-                    } else if (command === "highestRating" || command === "lowestRating") {
-                        let messagesChecked = 0;
-                        messageResult.forEach(message => {
-                            connection.query(`SELECT * FROM ratings WHERE messageid='${message.messageid}'`, (error, ratingResult) => {
-                                if (error) {
-                                    console.error(error);
-                                    res.status(400).send(error);
-                                }
-                                messagesChecked++;
-                                ratingResult.forEach(rating => {
-                                    if (rating.rating == 1) {
-                                        totals[message.userid].total++;
-                                    } else if (rating.rating == 2) {
-                                        totals[message.userid].total--;
-                                    }
-                                });
-                                if (messagesChecked === messageResult.length && ++usersChecked === userResult.length) {
-                                    /* Checked all users and messages, now need to find the desired user */
-                                    Object.values(totals).forEach(user => {
-                                        /* Find the desired user based on the command */
-                                        if (Object.keys(desiredUser).length === 0) {
-                                            desiredUser = user;
-                                        } else if (command === "highestRating" && user.total > desiredUser.total) {
-                                            desiredUser = user;
-                                        } else if (command === "lowestRating" && user.total < desiredUser.total) {
-                                            desiredUser = user;
-                                        }
-                                    });
-                                    res.status(200).send(JSON.stringify(desiredUser));
-                                }
-                            });
-                        });
-                    } else {
-                        res.status(400).send();
-                    }
-                });
+                        break;
+                    case "leastPosts":
+                    case "lowestRating":
+                        if (user.total < desiredUser.total) {
+                            desiredUser = user;
+                        }
+                        break;
+                }
+            }
+        });
+        res.status(200).send(JSON.stringify(desiredUser));
+    }
+
+    switch (command) {
+        case "mostPosts":
+        case "leastPosts":
+            connection.query(`SELECT * FROM users NATURAL JOIN messages`, (error, result) => {
+                if (error) {
+                    console.error(error);
+                    res.status(400).send(error);
+                } else {
+                    result.forEach(entry => {
+                        if (!(entry.userid in totals)) {
+                            totals[entry.username] = {
+                                username: entry.username,
+                                total: 0,
+                            }
+                        }
+                        totals[entry.userid].total++;
+                    });
+                    callback();
+                }
             });
-        }
-    });
+            break;
+        case "highestRating":
+        case "lowestRating":
+            connection.query(`SELECT * FROM users NATURAL JOIN (messages NATURAL JOIN ratings)`, (error, result) => {
+                if (error) {
+                    console.error(error);
+                    res.status(400).send(error);
+                } else {
+                    result.forEach(entry => {
+                        if (!(entry.userid in totals)) {
+                            totals[entry.userid] = {
+                                username: entry.username,
+                                total: 0,
+                            }
+                        }
+                        if (entry.rating === 1) {
+                            totals[entry.userid].total++;
+                        } else if (entry.rating === 2) {
+                            totals[entry.userid].total--;
+                        }
+                    });
+                    callback();
+                }
+            });
+            break;
+        default:
+            res.status(400).send();
+    }
 });
 
 app.listen(PORT, () => {
@@ -490,7 +479,8 @@ app.listen(PORT, () => {
         userid int unsigned NOT NULL auto_increment,
         username varchar(20) NOT NULL,
         password varchar(20) NOT NULL,
-        PRIMARY KEY (userid)
+        PRIMARY KEY (userid),
+        UNIQUE (username, password)
     )`,
         (error, result) => {
             if (error) {
@@ -533,7 +523,6 @@ app.listen(PORT, () => {
         userid int unsigned NOT NULL,
         parentid int NOT NULL,
         text varchar(280) NOT NULL,
-        username varchar(20) NOT NULL,
         PRIMARY KEY (messageid)
     )`,
         (error, result) => {
@@ -547,8 +536,7 @@ app.listen(PORT, () => {
         ratingid int unsigned NOT NULL auto_increment,
         channelid int unsigned NOT NULL,
         messageid int unsigned NOT NULL,
-        userid int unsigned NOT NULL,
-        username varchar(20) NOT NULL,
+        raterid int unsigned NOT NULL,
         rating int unsigned NOT NULL,
         PRIMARY KEY (ratingid)
     )`);

@@ -48,7 +48,7 @@ const Channel = (props) => {
         }
         fetch(`http://localhost:8080/${channelid}/addMessage`, {
             method: "POST",
-            body: new URLSearchParams({ username: props.user.username, userid: props.user.userid, parentid: messageid, text: text }),
+            body: new URLSearchParams({ userid: props.user.userid, parentid: messageid, text: text }),
             headers: { "Content-type": "application/x-www-form-urlencoded" }
         }).then(response => {
             if (response.status !== 200) {
